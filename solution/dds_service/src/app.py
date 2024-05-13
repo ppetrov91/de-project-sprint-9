@@ -5,11 +5,12 @@ lib_path = sys.path[0]
 lib_path = '/'.join(lib_path.split('/')[:-2])
 sys.path.append(lib_path)
 
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask
 
 from lib.app_config import AppConfig
-from service_stg.stg_message_processor_job import StgMessageProcessor
+from dds_service.src.dds_loader.dds_message_processor_job import DDSMessageProcessor
 
 app = Flask(__name__)
 
@@ -25,7 +26,6 @@ if __name__ == '__main__':
     
     d = {
         'consumer': None,
-        'redis': None,
         'postgres': None,
         'producer': None,
         'batch_size': config.batch_size,
@@ -35,9 +35,8 @@ if __name__ == '__main__':
     try:
         d['consumer'] = config.kafka_consumer()
         d['producer'] = config.kafka_producer()
-        d['redis'] = config.redis_client()
         d['postgres'] = config.postgres_client()
-        proc = StgMessageProcessor(**d)
+        proc = DDSMessageProcessor(**d)
 
         scheduler = BackgroundScheduler()
         scheduler.add_job(func=proc.run, trigger="interval", seconds=config.default_job_interval)

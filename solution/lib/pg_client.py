@@ -31,14 +31,22 @@ class PostgresClient:
 
     def get_connection(self) -> Connection:
         if not self.__connection:
-            self.__connection = psycopg.connect(self.url(), autocommit=True)
+            self.__connection = psycopg.connect(self.url())
             
         return self.__connection
 
-    def save_data_to_pg(self, sql, data) -> None:
+    def exec_sql_files(self, file_data_dict) -> None:
+        conn = self.get_connection()
+        with conn.transaction(), conn.cursor() as cur:
+            for file, data in file_data_dict.items():
+                with open(file, "r") as f:
+                    sql = f.read()
+                    cur.execute(sql, data)
+
+    def bulk_data_load(self, sql, data) -> None:
         conn = self.get_connection()
 
-        with conn.cursor() as cur:
+        with conn.transaction(), conn.cursor() as cur:
             cur.executemany(sql, data)
 
     def close(self) -> None:

@@ -72,29 +72,16 @@ class StgMessageProcessor:
 
     def __save_data_to_pg(self, data):
         self.__logger.info(f" {datetime.now(timezone.utc)}: Start saving data to postgres")
-        sql_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
-                                "sql/fill_stg_repository.sql")
+        file_data = {"sql/fill_order_events.sql": data, "sql/analyze_order_events.sql": tuple()}
+        
+        for file, d in file_data.items():
+            sql_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), file)
     
-        with open(sql_path, "r") as f:
-            sql = f.read()
-            self.__postgres.save_data_to_pg(sql, data)
+            with open(sql_path, "r") as f:
+                sql = f.read()
+                self.__postgres.bulk_data_load(sql, d)
         
         self.__logger.info(f" {datetime.now(timezone.utc)}: Stop saving data to postgres")
-
-    def __save_data_to_kafka(self, data):
-        self.__logger.info(f" {datetime.now(timezone.utc)}: Start saving data to kafka")
-        self.__producer.begin_transaction()
-
-        try:
-            for mes in data:
-                self.__producer.produce(mes)
-            self.__producer.commit_transaction()
-        except Exception as err:
-            self.__logger.info(f" {datetime.now(timezone.utc)}: Stop saving data to kafka")
-            self.__producer.abort_transaction()
-            raise err
-        
-        self.__logger.info(f" {datetime.now(timezone.utc)}: Stop saving data to kafka")
 
     def __process_batch(self) -> None:
         pg_data, kafka_data = [], []
@@ -117,7 +104,7 @@ class StgMessageProcessor:
             kafka_data.append(msg)
         
         self.__save_data_to_pg(pg_data)
-        self.__save_data_to_kafka(kafka_data)
+        self.__producer.save_data_to_kafka(kafka_data)
         self.__consumer.commit()
 
     def run(self) -> None:

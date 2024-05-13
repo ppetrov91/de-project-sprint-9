@@ -1,6 +1,7 @@
 import json
 from logging import Logger
 from confluent_kafka import Consumer, Producer, KafkaError, KafkaException
+from datetime import datetime, timezone
 from abc import ABC, abstractmethod
 
 
@@ -70,7 +71,7 @@ class KafkaProducer(KafkaProducerConsumer):
                         logger=self._logger
                        )
 
-    def begin_transaction(self):
+    def __begin_transaction(self):
         self._exec_func(attempts=self._attempts,
                         func=self.__client.begin_transaction,
                         func_args=tuple(),
@@ -78,7 +79,7 @@ class KafkaProducer(KafkaProducerConsumer):
                         logger=self._logger
                        )
 
-    def commit_transaction(self):
+    def __commit_transaction(self):
         self._exec_func(attempts=self._attempts,
                         func=self.__client.commit_transaction,
                         func_args=(self._timeout,),
@@ -86,7 +87,7 @@ class KafkaProducer(KafkaProducerConsumer):
                         logger=self._logger
                        )
     
-    def abort_transaction(self):
+    def __abort_transaction(self):
         self._exec_func(attempts=self._attempts,
                         func=self.__client.abort_transaction,
                         func_args=(self._timeout,),
@@ -111,13 +112,28 @@ class KafkaProducer(KafkaProducerConsumer):
 
         self._params['transactional.id'] = transactional_id
         self._create_client()
-    
-    def produce(self, payload):
+        
+    def __produce(self, payload):
         self._exec_func(attempts=self._attempts,
                         func=self.__client.produce,
                         func_args=[self._topic],
                         func_kwargs={"value": json.dumps(payload)},
                         logger=self._logger)
+        
+    def save_data_to_kafka(self, data):
+        self._logger.info(f" {datetime.now(timezone.utc)}: Start saving data to kafka")
+        self.__begin_transaction()
+        
+        try:
+            for mes in data:
+                self.__produce(mes)
+            self.__commit_transaction()
+        except Exception as err:
+            self._logger.info(f" {datetime.now(timezone.utc)}: Error while saving data to kafka")
+            self.__abort_transaction()
+            raise err
+        finally:
+            self._logger.info(f" {datetime.now(timezone.utc)}: Stop saving data to kafka")
 
 
 class KafkaConsumer(KafkaProducerConsumer):
