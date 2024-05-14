@@ -26,8 +26,6 @@ class AppConfig:
             'DDS_TRANSACTIONAL_ID': '',
             'KAFKA_CDM_CONSUMER_GROUP': '',
             'KAFKA_CDM_SRC_TOPIC': '',
-            'KAFKA_CDM_DST_TOPIC': '',
-            'CDM_TRANSACTIONAL_ID': '',
             'REDIS_HOST': '',
             'REDIS_PORT': '6379',
             'REDIS_PASSWORD': '',
@@ -72,13 +70,16 @@ class AppConfig:
              self.__dds_transactional_id
             ),
             (self.__kafka_cdm_src_topic, 
-             self.__kafka_cdm_dst_topic,
+             None,
              self.__kafka_cdm_consumer_group,
-             self.__cdm_transactional_id
+             None
             )
         )[(service_type == "dds") * 1 or (service_type == "cdm") * 2]
 
     def kafka_producer(self, service_type: str) -> KafkaProducer:
+        if service_type not in ("stg", "dds"):
+            raise Exception("A KafkaProducer instances are created for stg or dds service type")
+
         _, self.__kafka_dst_topic, _, self.__transactional_id = self.__get_attrs(service_type)
 
         return KafkaProducer(

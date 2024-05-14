@@ -3,6 +3,7 @@ import sys
 from lib.app_config import AppConfig
 from stg_service.stg_message_processor_job import StgMessageProcessor
 from dds_service.dds_message_processor_job import DDSMessageProcessor
+from cdm_service.cdm_message_processor_job import CDMMessageProcessor
 
 
 def set_logger():
@@ -20,16 +21,22 @@ def run_service():
     d = {
         'consumer': None,
         'postgres': None,
-        'producer': None,
         'batch_size': config.batch_size,
         'logger': logger
     }
 
     try:
         service_type = sys.argv[1]
-        obj_type = (StgMessageProcessor, DDSMessageProcessor)[service_type == "dds"]
+
+        if service_type not in ("stg", "dds", "cdm"):
+            raise Exception("service type must be stg, dds or cdm")
+
+        obj_type_tup = (StgMessageProcessor, DDSMessageProcessor, CDMMessageProcessor)
+        obj_type = obj_type_tup[(service_type == "dds") * 1 or (service_type == "cdm") * 2]
         d['consumer'] = config.kafka_consumer(service_type)
-        d['producer'] = config.kafka_producer(service_type)
+
+        if service_type in ("stg", "dds"):
+            d['producer'] = config.kafka_producer(service_type)
 
         if service_type == "stg":
             d['redis'] = config.redis_client()
