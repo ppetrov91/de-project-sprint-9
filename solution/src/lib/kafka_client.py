@@ -1,7 +1,6 @@
 import json
 from logging import Logger
 from confluent_kafka import Consumer, Producer, KafkaError, KafkaException
-from datetime import datetime, timezone
 from abc import ABC, abstractmethod
 
 
@@ -121,7 +120,7 @@ class KafkaProducer(KafkaProducerConsumer):
                         logger=self._logger)
         
     def save_data_to_kafka(self, data):
-        self._logger.info(f" {datetime.now(timezone.utc)}: Start saving data to kafka")
+        self._logger.info("Start saving data to kafka")
         self.__begin_transaction()
         
         try:
@@ -129,11 +128,11 @@ class KafkaProducer(KafkaProducerConsumer):
                 self.__produce(mes)
             self.__commit_transaction()
         except Exception as err:
-            self._logger.info(f" {datetime.now(timezone.utc)}: Error while saving data to kafka")
+            self._logger.info("Error while saving data to kafka")
             self.__abort_transaction()
             raise err
         finally:
-            self._logger.info(f" {datetime.now(timezone.utc)}: Stop saving data to kafka")
+            self._logger.info("Stop saving data to kafka")
 
 
 class KafkaConsumer(KafkaProducerConsumer):

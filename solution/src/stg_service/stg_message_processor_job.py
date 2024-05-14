@@ -71,7 +71,7 @@ class StgMessageProcessor:
         return val["sent_dttm"], self.__create_output_message(val, restaurant, user)
 
     def __save_data_to_pg(self, data):
-        self.__logger.info(f" {datetime.now(timezone.utc)}: Start saving data to postgres")
+        self.__logger.info("Start saving data to postgres")
         file_data = {"sql/fill_order_events.sql": data, "sql/analyze_order_events.sql": tuple()}
         
         for file, d in file_data.items():
@@ -81,11 +81,11 @@ class StgMessageProcessor:
                 sql = f.read()
                 self.__postgres.bulk_data_load(sql, d)
         
-        self.__logger.info(f" {datetime.now(timezone.utc)}: Stop saving data to postgres")
+        self.__logger.info("Stop saving data to postgres")
 
     def __process_data(self, data):
         pg_data, kafka_data = [], []
-        self.__logger.info(f" {datetime.now(timezone.utc)}: Start processing data from kafka")
+        self.__logger.info("Start processing data from kafka")
 
         for mes in data:
             sent_dttm, msg = self.__construct_message(mes)
@@ -98,30 +98,34 @@ class StgMessageProcessor:
             
             kafka_data.append(msg)
         
-        self.__logger.info(f" {datetime.now(timezone.utc)}: Stop processing data from kafka")
+        self.__logger.info("Stop processing data from kafka")
         return pg_data, kafka_data
 
     def __process_batch(self):
-        
-        self.__logger.info(f" {datetime.now(timezone.utc)}: Start getting data from kafka")
+        self.__logger.info("Start getting data from kafka")
         data = self.__consumer.consume(batch_size=self.__batch_size)
-        self.__logger.info(f" {datetime.now(timezone.utc)}: Stop getting data from kafka")
+        self.__logger.info("Stop getting data from kafka")
 
         if data is None or len(data) == 0:
-            self.__logger.info(f" {datetime.now(timezone.utc)}: No data was gathered from kafka")
+            self.__logger.info("No data was gathered from kafka")
             return
         
         pg_data, kafka_data = self.__process_data(data)
-        self.__save_data_to_pg(pg_data)
-        self.__producer.save_data_to_kafka(kafka_data)
+
+        if len(pg_data) > 0:
+            self.__save_data_to_pg(pg_data)
+
+        if len(kafka_data) > 0:
+            self.__producer.save_data_to_kafka(kafka_data)
+
         self.__consumer.commit()
 
     def run(self) -> None:
-        self.__logger.info(f" {datetime.now(timezone.utc)}: Start processing batch")
+        self.__logger.info("Start processing batch")
 
         try:
             self.__process_batch()
         except Exception as err:
             self.__logger.error(err, stack_info=True, exc_info=True)
 
-        self.__logger.info(f" {datetime.now(timezone.utc)}: Finish processing batch")
+        self.__logger.info("Finish processing batch")
