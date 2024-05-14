@@ -23,8 +23,8 @@ if __name__ == '__main__':
     }
 
     try:
-        d['consumer'] = config.kafka_consumer()
-        d['producer'] = config.kafka_producer()
+        d['consumer'] = config.kafka_consumer("dds")
+        d['producer'] = config.kafka_producer("dds")
         d['postgres'] = config.postgres_client()
         proc = DDSMessageProcessor(**d)
         proc.run()

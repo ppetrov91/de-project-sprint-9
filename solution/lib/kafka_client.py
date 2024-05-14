@@ -103,7 +103,7 @@ class KafkaProducer(KafkaProducerConsumer):
                  topic: str,
                  cert_path: str,
                  transactional_id: str,
-                 logger,
+                 logger: Logger,
                  timeout: float = 60.0,
                  attempts: int = 10
                 ):
@@ -161,11 +161,12 @@ class KafkaConsumer(KafkaProducerConsumer):
                  topic: str,
                  group: str,
                  cert_path: str,
+                 logger: Logger,
                  timeout: float = 60.0,
                  attempts: int = 10
                 ):
         super().__init__(host, port, user, password,
-                         topic, cert_path, timeout, attempts)
+                         topic, cert_path, logger, timeout, attempts)
         
         self._params['auto.offset.reset'] = 'earliest'
         self._params['group.id'] = group

@@ -2,7 +2,7 @@ import os
 from lib.kafka_client import KafkaConsumer, KafkaProducer
 from lib.pg_client import PostgresClient
 from lib.redis_client import RedisClient
-from typing import Dict
+from typing import Dict, Tuple
 from logging import Logger
 
 
@@ -16,10 +16,18 @@ class AppConfig:
             'KAFKA_PORT': '9092',
             'KAFKA_USERNAME': '',
             'KAFKA_PASSWORD': '',
-            'KAFKA_CONSUMER_GROUP': '',
-            'KAFKA_SOURCE_TOPIC': '',
-            'TRANSACTIONAL_ID': '',
-            'KAFKA_DESTINATION_TOPIC': '',
+            'KAFKA_STG_CONSUMER_GROUP': '',
+            'KAFKA_STG_SRC_TOPIC': '',
+            'KAFKA_STG_DST_TOPIC': '',
+            'STG_TRANSACTIONAL_ID': '',
+            'KAFKA_DDS_CONSUMER_GROUP': '',
+            'KAFKA_DDS_SRC_TOPIC': '',
+            'KAFKA_DDS_DST_TOPIC': '',
+            'DDS_TRANSACTIONAL_ID': '',
+            'KAFKA_CDM_CONSUMER_GROUP': '',
+            'KAFKA_CDM_SRC_TOPIC': '',
+            'KAFKA_CDM_DST_TOPIC': '',
+            'CDM_TRANSACTIONAL_ID': '',
             'REDIS_HOST': '',
             'REDIS_PORT': '6379',
             'REDIS_PASSWORD': '',
@@ -51,28 +59,51 @@ class AppConfig:
     def batch_size(self, batch_size):
         self.__batch_size = batch_size
 
-    def kafka_producer(self) -> KafkaProducer:
+    def __get_attrs(self, service_type: str) -> Tuple:
+        return (
+            (self.__kafka_stg_src_topic, 
+             self.__kafka_stg_dst_topic, 
+             self.__kafka_stg_consumer_group,
+             self.__stg_transactional_id
+            ),
+            (self.__kafka_dds_src_topic,
+             self.__kafka_dds_dst_topic, 
+             self.__kafka_dds_consumer_group, 
+             self.__dds_transactional_id
+            ),
+            (self.__kafka_cdm_src_topic, 
+             self.__kafka_cdm_dst_topic,
+             self.__kafka_cdm_consumer_group,
+             self.__cdm_transactional_id
+            )
+        )[(service_type == "dds") * 1 or (service_type == "cdm") * 2]
+
+    def kafka_producer(self, service_type: str) -> KafkaProducer:
+        _, self.__kafka_dst_topic, _, self.__transactional_id = self.__get_attrs(service_type)
+
         return KafkaProducer(
-            self.__kafka_host,
-            self.__kafka_port,
-            self.__kafka_username,
-            self.__kafka_password,
-            self.__kafka_destination_topic,
-            self.__certificate_path,
-            self.__transactional_id,
-            self.__logger
+            host=self.__kafka_host,
+            port=self.__kafka_port,
+            user=self.__kafka_username,
+            password=self.__kafka_password,
+            topic=self.__kafka_dst_topic,
+            cert_path=self.__certificate_path,
+            transactional_id=self.__transactional_id,
+            logger=self.__logger
         )
 
-    def kafka_consumer(self) -> KafkaConsumer:
+    def kafka_consumer(self, service_type: str) -> KafkaConsumer:
+        self.__kafka_src_topic, _, self.__kafka_consumer_group, _ = self.__get_attrs(service_type)
+
         return KafkaConsumer(
-            self.__kafka_host,
-            self.__kafka_port,
-            self.__kafka_username,
-            self.__kafka_password,
-            self.__kafka_source_topic,
-            self.__kafka_consumer_group,
-            self.__certificate_path,
-            self.__logger
+            host=self.__kafka_host,
+            port=self.__kafka_port,
+            user=self.__kafka_username,
+            password=self.__kafka_password,
+            topic=self.__kafka_src_topic,
+            group=self.__kafka_consumer_group,
+            cert_path=self.__certificate_path,
+            logger=self.__logger
         )
 
     def redis_client(self) -> RedisClient:

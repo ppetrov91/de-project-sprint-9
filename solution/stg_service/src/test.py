@@ -24,8 +24,8 @@ if __name__ == '__main__':
     }
 
     try:
-        d['consumer'] = config.kafka_consumer()
-        d['producer'] = config.kafka_producer()
+        d['consumer'] = config.kafka_consumer("stg")
+        d['producer'] = config.kafka_producer("stg")
         d['redis'] = config.redis_client()
         d['postgres'] = config.postgres_client()
         proc = StgMessageProcessor(**d)

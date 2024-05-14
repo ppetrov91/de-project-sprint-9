@@ -33,7 +33,7 @@ class StgMessageProcessor:
         return {
             "object_id": message["object_id"],
             "object_type": message["object_type"],
-            "sent_dttm": message["sent_dttm"],
+            "sent_dttm": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
             "payload": {
                 "id": message["object_id"],
                 "date": message["payload"]["date"],
@@ -65,10 +65,10 @@ class StgMessageProcessor:
         val = json.loads(mes.value().decode())
 
         if val.get("object_type", "") != "order":
-            return None
+            return None, None
         
         restaurant, user = self.__get_restaurant_user_from_redis(val)
-        return self.__create_output_message(val, restaurant, user)
+        return val["sent_dttm"], self.__create_output_message(val, restaurant, user)
 
     def __save_data_to_pg(self, data):
         self.__logger.info(f" {datetime.now(timezone.utc)}: Start saving data to postgres")
@@ -83,26 +83,35 @@ class StgMessageProcessor:
         
         self.__logger.info(f" {datetime.now(timezone.utc)}: Stop saving data to postgres")
 
-    def __process_batch(self) -> None:
+    def __process_data(self, data):
         pg_data, kafka_data = [], []
-        self.__logger.info(f" {datetime.now(timezone.utc)}: Start getting data from kafka")
-        data = self.__consumer.consume(batch_size=self.__batch_size)
-        self.__logger.info(f" {datetime.now(timezone.utc)}: Stop getting data from kafka")
+        self.__logger.info(f" {datetime.now(timezone.utc)}: Start processing data from kafka")
 
-        if data is None or len(data) == 0:
-            return
-        
         for mes in data:
-            msg = self.__construct_message(mes)
+            sent_dttm, msg = self.__construct_message(mes)
 
             if not msg:
                 continue
 
             pg_data.append((msg["object_id"], json.dumps(msg["payload"]), 
-                            msg["object_type"], msg["sent_dttm"]))
+                            msg["object_type"], sent_dttm))
             
             kafka_data.append(msg)
         
+        self.__logger.info(f" {datetime.now(timezone.utc)}: Stop processing data from kafka")
+        return pg_data, kafka_data
+
+    def __process_batch(self):
+        
+        self.__logger.info(f" {datetime.now(timezone.utc)}: Start getting data from kafka")
+        data = self.__consumer.consume(batch_size=self.__batch_size)
+        self.__logger.info(f" {datetime.now(timezone.utc)}: Stop getting data from kafka")
+
+        if data is None or len(data) == 0:
+            self.__logger.info(f" {datetime.now(timezone.utc)}: No data was gathered from kafka")
+            return
+        
+        pg_data, kafka_data = self.__process_data(data)
         self.__save_data_to_pg(pg_data)
         self.__producer.save_data_to_kafka(kafka_data)
         self.__consumer.commit()

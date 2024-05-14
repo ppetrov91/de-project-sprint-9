@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from logging import Logger
 from lib.kafka_client import KafkaConsumer, KafkaProducer
 from lib.pg_client import PostgresClient
-from typing import Dict
 
 
 class DDSMessageProcessor:
@@ -20,20 +19,31 @@ class DDSMessageProcessor:
         self.__batch_size = batch_size
         self.__logger = logger
 
-    def __construct_message(self, mes: Dict) -> Dict:
+    def __construct_message(self, mes):
         if mes.error():
             raise Exception(f"An error occured while reading a message from kafka: {mes.error()}")
 
         val = json.loads(mes.value().decode())
 
         if val.get("object_type", "") != "order":
-            return None
+            return None, None
         
-        return {
-            "order_id": val["object_id"],
-            "user_id": val["payload"]["user"]["id"],
-            "products": [{"product_id": p["id"], 
-                          "category_name": p["category"]} for p in val["payload"]["products"]]
+        order_id, status = int(val["object_id"]), val["payload"]["status"]
+
+        if status != "CLOSED":
+            return order_id, None
+
+        return order_id, {
+            "object_id": order_id,
+            "object_type": "order",
+            "sent_dttm": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
+            "payload": {
+                "status": status,
+                "date": val["payload"]["date"],
+                "user_id": val["payload"]["user"]["id"],
+                "products": [{"product_id": p["id"], 
+                              "category_name": p["category"]} for p in val["payload"]["products"]]
+            }
         }
 
     @staticmethod
@@ -87,13 +97,15 @@ class DDSMessageProcessor:
             return
         
         for mes in data:
-            msg = self.__construct_message(mes)
+            order_id, msg = self.__construct_message(mes)
 
-            if not msg:
+            if not order_id:
                 continue
         
-            ids.append(int(msg["order_id"]))
-            kafka_data.append(msg)
+            ids.append(order_id)
+
+            if msg is not None:
+                kafka_data.append(msg)
 
         self.__save_data_to_pg(ids, "order", "stg-service-orders")
         self.__producer.save_data_to_kafka(kafka_data)
