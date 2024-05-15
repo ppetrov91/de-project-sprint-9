@@ -1,10 +1,10 @@
 import logging
 import sys
+import logging.handlers as handlers
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask
 from lib.app_config import AppConfig
-from solution.src.dds_service.dds_message_processor_job import DDSMessageProcessor
-from solution.src.stg_service.stg_message_processor_job import StgMessageProcessor
+
 
 app = Flask(__name__)
 
@@ -16,14 +16,17 @@ def health():
 def set_logger():
     logger = app.logger
     logger.setLevel(logging.INFO)
-    ch = logging.StreamHandler()
+    handler = handlers.TimedRotatingFileHandler(filename="/log/app.log", 
+                                                when="H", 
+                                                interval=24,
+                                                backupCount=7)
 
     formatter = logging.Formatter('dt=%(asctime)s,  name=%(name)s, level=%(levelname)s, msg=%(message)s',  
                                   datefmt="%Y-%m-%d %H:%M:%S")
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
-def run_service():
+def create_proc(service_type):
     d = {
         'consumer': None,
         'postgres': None,
@@ -33,18 +36,32 @@ def run_service():
         'logger': app.logger
     }
 
+    d['consumer'] = config.kafka_consumer(service_type)
+    d['postgres'] = config.postgres_client()
+
+    if service_type == "stg":
+        d['producer'] = config.kafka_producer(service_type)
+        d['redis'] = config.redis_client()
+        from stg_service.stg_message_processor_job import StgMessageProcessor
+        obj_type = StgMessageProcessor
+    elif service_type == "dds":
+        d['producer'] = config.kafka_producer(service_type)
+        from dds_service.dds_message_processor_job import DDSMessageProcessor
+        obj_type = DDSMessageProcessor
+    else:
+        from cdm_service.cdm_message_processor_job import CDMMessageProcessor
+        obj_type = CDMMessageProcessor
+
+    return d, obj_type(**d)
+
+def run_service():
     try:
         service_type = sys.argv[1]
-        obj_type = (StgMessageProcessor, DDSMessageProcessor)[service_type == "dds"]
-        d['consumer'] = config.kafka_consumer(service_type)
-        d['producer'] = config.kafka_producer(service_type)
 
-        if service_type == 'stg':
-            d['redis'] = config.redis_client()
+        if service_type not in ("stg", "dds", "cdm"):
+            raise Exception("service type must be stg, dds or cdm")
 
-        d['postgres'] = config.postgres_client()
-        proc = obj_type(**d)
-
+        d, proc = create_proc(service_type)
         scheduler = BackgroundScheduler()
         scheduler.add_job(func=proc.run, trigger="interval", seconds=config.default_job_interval)
         scheduler.start()

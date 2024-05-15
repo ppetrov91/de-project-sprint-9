@@ -10,7 +10,7 @@ class AppConfig:
     @staticmethod
     def __get_env_variables_dict() -> Dict:
         return {
-            'CERTIFICATE_PATH': '/usr/local/share/ca-certificates/Yandex/YandexInternalRootCA.crt',
+            'CERTIFICATE_PATH': '/crt/YandexInternalRootCA.crt',
             'DEFAULT_JOB_INTERVAL': '25',
             'KAFKA_HOST': '',
             'KAFKA_PORT': '9092',
@@ -48,6 +48,15 @@ class AppConfig:
                 val = int(val)
 
             setattr(self, f"_{self.__class__.__name__}__{k.lower()}", val)
+
+    @property
+    def default_job_interval(self):
+        return self.__default_job_interval
+    
+    @default_job_interval.setter
+    def default_job_interval(self, default_job_interval):
+        if default_job_interval >= 0:
+            self.__default_job_interval = default_job_interval
 
     @property
     def batch_size(self):
