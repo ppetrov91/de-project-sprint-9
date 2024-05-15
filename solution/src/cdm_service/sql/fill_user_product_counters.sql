@@ -11,7 +11,7 @@ SELECT v.h_user_pk AS user_id
             ON lou.h_user_pk = h.h_user_pk
           JOIN dds.s_order_status sos
             ON sos.h_order_pk = lou.h_order_pk
-           AND %s BETWEEN sos.start_dt AND sos.end_dt
+           AND current_timestamp BETWEEN sos.start_dt AND sos.end_dt
            AND sos.status = 'CLOSED'
           JOIN dds.l_order_product lop
             ON lop.h_order_pk = lou.h_order_pk
@@ -20,7 +20,7 @@ SELECT v.h_user_pk AS user_id
        ) v
   JOIN dds.s_product_names spn
     ON spn.h_product_pk = v.h_product_pk
-   AND %s BETWEEN spn.start_dt AND spn.end_dt
+   AND current_timestamp BETWEEN spn.start_dt AND spn.end_dt
     ON CONFLICT (user_id, product_id)
     DO UPDATE
           SET product_name = EXCLUDED.product_name

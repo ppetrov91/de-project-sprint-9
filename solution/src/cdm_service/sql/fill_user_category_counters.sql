@@ -11,7 +11,7 @@ SELECT v.user_id
             ON lou.h_user_pk = h.h_user_pk
           JOIN dds.s_order_status sos
             ON sos.h_order_pk = lou.h_order_pk
-           AND %s BETWEEN sos.start_dt AND sos.end_dt
+           AND current_timestamp BETWEEN sos.start_dt AND sos.end_dt
            AND sos.status = 'CLOSED'
           JOIN dds.l_order_product lop
             ON lop.h_order_pk = lou.h_order_pk

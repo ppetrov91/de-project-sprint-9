@@ -3,7 +3,6 @@ import os
 from logging import Logger
 from lib.kafka_client import KafkaConsumer
 from lib.pg_client import PostgresClient
-from datetime import datetime
 
 
 class CDMMessageProcessor:
@@ -20,12 +19,11 @@ class CDMMessageProcessor:
     @staticmethod
     def __get_file_data_dict(ids):
         dirname = os.path.dirname(os.path.abspath(__file__))
-        cur_time = datetime.now()
 
         return {
-            f"{dirname}/sql/fill_user_category_counters.sql": [cur_time, ids], 
+            f"{dirname}/sql/fill_user_category_counters.sql": [ids], 
             f"{dirname}/sql/analyze_user_category_counters.sql": tuple(),
-            f"{dirname}/sql/fill_user_product_counters.sql": [cur_time, ids, cur_time],
+            f"{dirname}/sql/fill_user_product_counters.sql": [ids],
             f"{dirname}/sql/analyze_user_product_counters.sql": tuple()
         }
 
