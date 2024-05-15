@@ -1,59 +1,53 @@
 version: "3.9"
 
 services:
-  dds_service:
+  stg_service:
     build:
-      context: ./service_dds
+      context: .
+      args:
+        SERVICE_TYPE: stg
+      dockerfile: dockerfile
       network: host
-    image: dds_service:local
-    container_name: dds_service_container
+    image: stg_service:local
+    container_name: stg_service_container
+    env_file: env_file
     environment:
-      FLASK_APP: ${DDS_APP:-dds_service}
-      DEBUG: ${DDS_DEBUG:-True}
-
-      KAFKA_HOST: ${KAFKA_HOST}
-      KAFKA_PORT: ${KAFKA_PORT}
-      KAFKA_CONSUMER_USERNAME: ${KAFKA_CONSUMER_USERNAME}
-      KAFKA_CONSUMER_PASSWORD: ${KAFKA_CONSUMER_PASSWORD}
-      KAFKA_CONSUMER_GROUP: ${KAFKA_CONSUMER_GROUP}
-      KAFKA_SOURCE_TOPIC: ${KAFKA_STG_SERVICE_ORDERS_TOPIC}
-      KAFKA_DESTINATION_TOPIC: ${KAFKA_DDS_SERVICE_ORDERS_TOPIC}
-
-      PG_WAREHOUSE_HOST: ${PG_WAREHOUSE_HOST}
-      PG_WAREHOUSE_PORT: ${PG_WAREHOUSE_PORT}
-      PG_WAREHOUSE_DBNAME: ${PG_WAREHOUSE_DBNAME}
-      PG_WAREHOUSE_USER: ${PG_WAREHOUSE_USER}
-      PG_WAREHOUSE_PASSWORD: ${PG_WAREHOUSE_PASSWORD}
-
+      FLASK_APP: stg_service
     network_mode: "bridge"
     ports:
       - "5012:5000"
     restart: unless-stopped
 
-  cdm_service:
+  dds_service:
     build:
-      context: ./service_cdm
+      context: .
+      args:
+        SERVICE_TYPE: dds
+      dockerfile: dockerfile
       network: host
-    image: cdm_service:local
-    container_name: cdm_service_container
+    image: dds_service:local
+    container_name: dds_service_container
+    env_file: env_file
     environment:
-      FLASK_APP: ${CDM_SERVICE_APP:-cdm_service}
-      DEBUG: ${CDM_SERVICE_DEBUG:-True}
-
-      KAFKA_HOST: ${KAFKA_HOST}
-      KAFKA_PORT: ${KAFKA_PORT}
-      KAFKA_CONSUMER_USERNAME: ${KAFKA_CONSUMER_USERNAME}
-      KAFKA_CONSUMER_PASSWORD: ${KAFKA_CONSUMER_PASSWORD}
-      KAFKA_CONSUMER_GROUP: ${KAFKA_CONSUMER_GROUP}
-      KAFKA_SOURCE_TOPIC: ${KAFKA_DDS_SERVICE_ORDERS_TOPIC}
-
-      PG_WAREHOUSE_HOST: ${PG_WAREHOUSE_HOST}
-      PG_WAREHOUSE_PORT: ${PG_WAREHOUSE_PORT}
-      PG_WAREHOUSE_DBNAME: ${PG_WAREHOUSE_DBNAME}
-      PG_WAREHOUSE_USER: ${PG_WAREHOUSE_USER}
-      PG_WAREHOUSE_PASSWORD: ${PG_WAREHOUSE_PASSWORD}
-
+      FLASK_APP: dds_service
     network_mode: "bridge"
     ports:
       - "5013:5000"
+    restart: unless-stopped
+
+  cdm_service:
+    build:
+      context: .
+      args:
+        SERVICE_TYPE: cdm
+      dockerfile: dockerfile
+      network: host
+    image: cdm_service:local
+    container_name: cdm_service_container
+    env_file: env_file
+    environment:
+      FLASK_APP: cdm_service
+    network_mode: "bridge"
+    ports:
+      - "5014:5000"
     restart: unless-stopped

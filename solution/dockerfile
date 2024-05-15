@@ -1,10 +1,14 @@
 FROM python:3.10
 
+ARG SERVICE_TYPE
+ENV SERV_TYPE=${SERVICE_TYPE}
+
 RUN apt-get update -y
+RUN mkdir -p /src/lib src/${SERVICE_TYPE}_service /log
 
-RUN mkdir -p /src /log
-
-COPY src/ /src/
+COPY src/app.py /src/ 
+COPY src/lib /src/lib/
+COPY src/${SERVICE_TYPE}_service /src/${SERVICE_TYPE}_service
 COPY requirements.txt .
 
 RUN pip install -r requirements.txt
@@ -14,6 +18,4 @@ RUN wget "https://storage.yandexcloud.net/cloud-certs/CA.pem" --output-document 
 RUN chmod 0600 /crt/YandexInternalRootCA.crt
 
 WORKDIR /src
-ENTRYPOINT ["python", "app.py"]
-
-CMD ["stg"]
+CMD python3 app.py $SERV_TYPE
