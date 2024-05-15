@@ -13,31 +13,26 @@ app = Flask(__name__)
 def health():
     return 'healthy'
 
-def set_logger():
+def set_logger(service_type):
     logger = app.logger
     logger.setLevel(logging.INFO)
-    handler = handlers.TimedRotatingFileHandler(filename="/log/app.log", 
+    handler = handlers.TimedRotatingFileHandler(filename=f"/log/{service_type}.log", 
                                                 when="H", 
                                                 interval=24,
                                                 backupCount=7)
 
-    formatter = logging.Formatter('dt=%(asctime)s,  name=%(name)s, level=%(levelname)s, msg=%(message)s',  
+    formatter = logging.Formatter('dt=%(asctime)s, name=%(name)s, level=%(levelname)s, msg=%(message)s',  
                                   datefmt="%Y-%m-%d %H:%M:%S")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-def create_proc(service_type):
+def create_proc(config, service_type):
     d = {
-        'consumer': None,
-        'postgres': None,
-        'redis': None,
-        'producer': None,
+        'consumer': config.kafka_consumer(service_type),
+        'postgres': config.postgres_client(),
         'batch_size': config.batch_size,
         'logger': app.logger
     }
-
-    d['consumer'] = config.kafka_consumer(service_type)
-    d['postgres'] = config.postgres_client()
 
     if service_type == "stg":
         d['producer'] = config.kafka_producer(service_type)
@@ -54,14 +49,12 @@ def create_proc(service_type):
 
     return d, obj_type(**d)
 
-def run_service():
+def run_service(service_type):
+    set_logger(service_type)
+    config = AppConfig(app.logger)
+
     try:
-        service_type = sys.argv[1]
-
-        if service_type not in ("stg", "dds", "cdm"):
-            raise Exception("service type must be stg, dds or cdm")
-
-        d, proc = create_proc(service_type)
+        d, proc = create_proc(config, service_type)
         scheduler = BackgroundScheduler()
         scheduler.add_job(func=proc.run, trigger="interval", seconds=config.default_job_interval)
         scheduler.start()
@@ -76,6 +69,9 @@ def run_service():
 
 
 if __name__ == '__main__':
-    set_logger()
-    config = AppConfig(app.logger)
-    run_service()
+    service_type = sys.argv[1]
+
+    if service_type not in ("stg", "dds", "cdm"):
+        raise Exception("service type must be stg, dds or cdm")
+
+    run_service(service_type)

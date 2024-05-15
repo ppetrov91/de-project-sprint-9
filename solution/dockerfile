@@ -1,14 +1,10 @@
 FROM python:3.10
 
-ARG SERVICE_FOLDER_NAME=stg_service
-
 RUN apt-get update -y
 
-RUN mkdir -p /src/lib /src/${SERVICE_FOLDER_NAME} /log
+RUN mkdir -p /src /log
 
-COPY src/app.py /src/
-COPY src/${SERVICE_FOLDER_NAME} /src/${SERVICE_FOLDER_NAME}/
-COPY src/lib/ /src/lib/
+COPY src/ /src/
 COPY requirements.txt .
 
 RUN pip install -r requirements.txt
