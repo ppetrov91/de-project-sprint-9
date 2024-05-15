@@ -1,39 +1,32 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "app.fullname" . }}
+  name: {{ .Values.nameOverride }}
   labels:
-    {{- include "app.labels" . | nindent 4 }}
+    app: {{ .Values.nameOverride }}
+    tier: {{ .Values.tier }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "app.selectorLabels" . | nindent 6 }}
+      app: {{ .Values.nameOverride }}
+      tier: {{ .Values.tier }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       labels:
-        {{- include "app.selectorLabels" . | nindent 8 }}
+        app: {{ .Values.nameOverride }}
+        tier: {{ .Values.tier }}
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       containers:
-        - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        - name: {{ .Values.nameOverride }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          envFrom:
-            - configMapRef:
-                name: {{ include "app.fullname" . }}-config
           ports:
             - name: http
               containerPort: {{ .Values.containerPort }}
               protocol: TCP
+          envFrom:
+            - secretRef:
+                name: {{ .Values.nameOverride }}-secret    
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

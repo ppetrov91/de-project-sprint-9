@@ -1,48 +1,44 @@
-# Default values for app.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
 replicaCount: 1
+tier: backend
 
 image:
   # Link to your container registry. You will launch it in Yandex Cloud.
   repository: cr.yandex/crpvtpe3gfclmuge0opa/stg_service
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v2024-05-04-r2"
+  tag: "latest"
 
 containerPort: 5000
 
 config:
-  KAFKA_HOST: "rc1a-bmniojq9blbjrfa1.mdb.yandexcloud.net"
-  KAFKA_PORT: "9091"
-  KAFKA_CONSUMER_USERNAME: "producer_consumer"
-  KAFKA_CONSUMER_PASSWORD: "producer_consumer"
-  KAFKA_CONSUMER_GROUP: "producer_consumer"
-  KAFKA_SOURCE_TOPIC: "order-service_orders"
-  KAFKA_STG_SERVICE_ORDERS_TOPIC: "stg-service-orders"
+  KAFKA_HOST: ""
+  KAFKA_PORT: ""
+  KAFKA_USERNAME: ""
+  KAFKA_PASSWORD: ""
+  KAFKA_STG_CONSUMER_GROUP: ""
+  KAFKA_STG_SRC_TOPIC: ""
+  KAFKA_STG_DST_TOPIC: ""
+  STG_TRANSACTIONAL_ID: ""
+  KAFKA_DDS_CONSUMER_GROUP: ""
+  KAFKA_DDS_SRC_TOPIC: ""
+  KAFKA_DDS_DST_TOPIC: ""
+  DDS_TRANSACTIONAL_ID: ""
+  KAFKA_CDM_CONSUMER_GROUP: ""
+  KAFKA_CDM_SRC_TOPIC: ""
+  BATCH_SIZE: 150
+  PG_WAREHOUSE_HOST: ""
+  PG_WAREHOUSE_PORT: ""
+  PG_WAREHOUSE_DBNAME: ""
+  PG_WAREHOUSE_USER: ""
+  PG_WAREHOUSE_PASSWORD: ""
+  REDIS_HOST: ""
+  REDIS_PORT: ""
+  REDIS_PASSWORD: ""
 
-  PG_WAREHOUSE_HOST: "rc1b-bn07a8p3purpmiw4.mdb.yandexcloud.net"
-  PG_WAREHOUSE_PORT: "6432"
-  PG_WAREHOUSE_DBNAME: "sprint9dwh"
-  PG_WAREHOUSE_USER: "db_user"
-  PG_WAREHOUSE_PASSWORD: "db_password"
-
-  REDIS_HOST: "c-c9qh9j3av01sefgj2afl.rw.mdb.yandexcloud.net"
-  REDIS_PORT: "6380"
-  REDIS_PASSWORD: "Composition2024!"
-
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
-
-podAnnotations: {}
+nameOverride: "stg-service"
+fullnameOverride: "stg-service"
 
 resources:
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   limits:
     cpu: 100m
     memory: 128Mi
