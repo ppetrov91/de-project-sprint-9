@@ -4,12 +4,14 @@
 1. app - helm-chart для создания трёх сервисов.
 2. ddl - SQL-скрипты создания объектов схем stg, dds и cdm.
 3. src/cdm_service - код cdm-service для наполнения витрин данных.
-4. src/dds_service - код dds-service для наполнения dds-слоя.
-5. src/lib - код классов KafkaProducer, KafkaConsumer, PostgresClient, RedisClient. Используются в трёх сервисах, поэтому вынесены в отдельную директорию.
-6. src/stg_service - код stg-service для наполнения stg-слоя.
-7. src/app.py - главный файл запуска сервисов.
-8. docker-compose.yaml - файл разворачивания контейнеров для сервисов.
-9. dockerfile - файл для создания контейнера под сервис.
+4. src/cdm_service/sql - SQL-скрипты наполнения витрин данных.
+5. src/dds_service - код dds-service для наполнения dds-слоя.
+6. src/dds_service/sql - SQL-скрипты для наполнения dds-слоя.
+7. src/lib - код классов KafkaProducer, KafkaConsumer, PostgresClient, RedisClient. Используются в трёх сервисах, поэтому вынесены в отдельную директорию.
+8. src/stg_service - код stg-service для наполнения stg-слоя.
+9. src/app.py - главный файл запуска сервисов.
+10. docker-compose.yaml - файл разворачивания контейнеров для сервисов.
+11. dockerfile - файл для создания контейнера под сервис.
 
 ### Описание класса AppConfig файла lib/app_config.py
 1. Метод __get_env_variables_dict() - возвращает словарь конфигурационных параметров:
@@ -103,3 +105,20 @@
 4. __abort_transaction() - функция отката транзакции при неуспешной записи сообщений в Kafka topic.
 5. __produce() - функция записи сообщения в Kafka topic.
 6. save_data_to_kafka() - функция записи батча сообщений в Kafka topic.
+
+### Описание класса KafkaConsumer файла lib/kafka_client.py
+Используется для чтения сообщений из Kafka topic.
+
+1. close() - закрытие confluent_kafka.Consumer, используется при останове сервиса.
+2. _create_client() - создание экземпляра класса confluent_kafka.Consumer для чтения сообщений из Kafka topic и его подписки на указанный topic.
+3. commit() - подтверждение забора message batch из Kafka topic.
+4. consume() - забор message batch из Kafka topic.
+
+### Описание класса PostgresClient файла lib/pg_client.py
+Используется для работы с СУБД PostgreSQL.
+
+1. url() - возвращает строку подключения к СУБД PostgreSQL.
+2. get_connection() - создание или возврат уже существующего подключения к СУБД PostgreSQL.
+3. exec_sql_files() - выполнение SQL-скриптов в СУБД PostgreSQL.
+4. bulk_data_load() - сохранение data batch в СУБД PostgreSQL.
+5. close() - закрытие подключения к СУБД PostgreSQL, используется при останове сервиса.
