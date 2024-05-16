@@ -11,7 +11,7 @@
 8. docker-compose.yaml - файл разворачивания контейнеров для сервисов.
 9. dockerfile - файл для создания контейнера под сервис.
 
-### Описание класса AppConfig файла app_config.py
+### Описание класса AppConfig файла lib/app_config.py
 1. Метод __get_env_variables_dict() - возвращает словарь конфигурационных параметров:
     - CERTIFICATE_PATH - путь к сертификату для подключения к компонентам Yandex Cloud.
 	- DEFAULT_JOB_INTERVAL - частота работы сервиса. Например, раз в две минуты.
@@ -39,7 +39,7 @@
     - PG_WAREHOUSE_PASSWORD - пароль пользователя для подключения к СУБД PostgreSQL.
     - BATCH_SIZE - число забираемых сообщений из топика Kafka за один проход.
 
-2. Метод __init__() - конструктор класса AppConfig:
+2. Конструктор класса AppConfig:
     - Создаёт private атрибуты на основе словаря, возвращаемого методом __get_env_variables_dict().
 	- batch_size, default_job_interval и порты компонентов Yandex Cloud преобразуются в целое число.
 
@@ -47,5 +47,20 @@
 
 4. batch_size() - getter и setter для обращения к атрибуту __batch_size.
 
-5. 
+5. private метод get_attrs() - возвращает атрибуты, необходимые для создания KafkaConsumer и KafkaProducer.
+    - Топик чтения данных.
+	- Топик записи данных.
+	- Consumer group для чтения данных.
+	- transactional id для записи данных с использованием механизма транзакции.
 
+	Для cdm сервиса топик записи данных и transactional id is None, поскольку он только читает данные.
+
+6. kafka_producer() - метод создания экземпляра класса KafkaProducer.
+
+7. kafka_consumer() - метод создания экземпляра класса KafkaConsumer.
+
+8. redis_client() - метод создания экземпляра класса RedisClient.
+
+9. postgres_client() - метод создания экземпляра класса PostgresClient.
+
+### Описание класса KafkaProducerConsumer файла lib/kafka_client.py
