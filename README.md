@@ -64,3 +64,7 @@
 9. postgres_client() - метод создания экземпляра класса PostgresClient.
 
 ### Описание класса KafkaProducerConsumer файла lib/kafka_client.py
+Абстрактный класс, является родительским для KafkaConsumer и KafkaProducer.
+
+
+1. 
