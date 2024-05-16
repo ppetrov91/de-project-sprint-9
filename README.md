@@ -66,8 +66,7 @@
 9. postgres_client() - метод создания экземпляра класса PostgresClient.
 
 ### Описание класса KafkaProducerConsumer файла lib/kafka_client.py
-Абстрактный класс, является родительским для KafkaConsumer и KafkaProducer.
-
+Абстрактный класс, является родительским для KafkaConsumer и KafkaProducer:
 
 1. _error_callback() - callback, вызываемый при возникновении ошибки при работе с Kafka broker.
 
@@ -97,7 +96,7 @@
    - attempts - максимальное число любой операции с kafka broker, 10.
 
 ### Описание класса KafkaProducer файла lib/kafka_client.py
-Используется для записи сообщений в Kafka topic.
+Используется для записи сообщений в Kafka topic:
 
 1. _create_client() - создание экземпляра класса confluent_kafka.Producer для записи сообщений в Kafka topic.
 2. __begin_transaction() - функция начала транзакции при записи сообщений в Kafka topic.
@@ -107,7 +106,7 @@
 6. save_data_to_kafka() - функция записи батча сообщений в Kafka topic.
 
 ### Описание класса KafkaConsumer файла lib/kafka_client.py
-Используется для чтения сообщений из Kafka topic.
+Используется для чтения сообщений из Kafka topic:
 
 1. close() - закрытие confluent_kafka.Consumer, используется при останове сервиса.
 2. _create_client() - создание экземпляра класса confluent_kafka.Consumer для чтения сообщений из Kafka topic и его подписки на указанный topic.
@@ -115,7 +114,7 @@
 4. consume() - забор message batch из Kafka topic.
 
 ### Описание класса PostgresClient файла lib/pg_client.py
-Используется для работы с СУБД PostgreSQL.
+Используется для работы с СУБД PostgreSQL:
 
 1. url() - возвращает строку подключения к СУБД PostgreSQL.
 2. get_connection() - создание или возврат уже существующего подключения к СУБД PostgreSQL.
