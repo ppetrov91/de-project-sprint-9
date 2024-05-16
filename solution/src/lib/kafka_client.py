@@ -50,7 +50,7 @@ class KafkaProducerConsumer(ABC):
                  topic: str,
                  cert_path: str,
                  logger: Logger,
-                 timeout: float = 10.0,
+                 timeout: float = 60.0,
                  attempts: int = 10
                 ):
         self._params = self._get_params(host, port, cert_path, user, password)
@@ -128,7 +128,7 @@ class KafkaProducer(KafkaProducerConsumer):
                 self.__produce(mes)
             self.__commit_transaction()
         except Exception as err:
-            self._logger.info("Error while saving data to kafka")
+            self._logger.error("Error while saving data to kafka")
             self.__abort_transaction()
             raise err
         finally:
