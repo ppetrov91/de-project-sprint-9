@@ -69,4 +69,27 @@
 
 1. _error_callback() - callback, вызываемый при возникновении ошибки при работе с Kafka broker.
 
-2. _get_params() - метод, возвращающий словарь конфигурационных параметров подключения к Kafka borker.
+2. _get_params() - метод, возвращающий словарь конфигурационных параметров подключения к Kafka broker.
+
+3. _create_client() - абстрактный метод, переопределяется в KafkaConsumer и KafkaProducer.
+
+4. _exec_func() - вспомогательная функция для вызова:
+   - produce()
+   - consume()
+   - begin_transaction()
+   - commit_transaction()
+   - abort_transaction()
+   - commit()
+
+   Иногда может быть инициировано исключение KafkaError, в котором содержится информация о возможности повторения той или иной операции. Если есть возможность, то пытаемся повторить операцию, но не более attempts раз. Если операцию не получается выполнить attempts раз подряд, то инициируем исключение.
+
+5. Конструктор класса KafkaProducerConsumer. Принимает следующие параметры:
+   - host - host Kafka broker
+   - port - порт Kafka broker
+   - user - логин подключения к Kafka broker.
+   - password - пароль подключения к Kafka broker.
+   - topic - топик подключения к Kafka broker.
+   - cert_path - путь к сертификату для подключения к Kafka broker.
+   - logger - logger для протоколирования действий сервиса с последующей записью в файл.
+   - timeout - timeout любой операции с kafka broker, 10 секунд.
+   - attempts - максимальное число любой операции с kafka broker, 10.
