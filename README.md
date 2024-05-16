@@ -249,3 +249,17 @@
 2. create_proc() - создание экземпляра StgMessageProcessor, DDSMessageProcessor или CDMMessageProcessor.
 
 3. run_service() - запуск задания по расписанию, при завершении работы сервиса отключаемся от KafkaBroker, Redis и PostgreSQL
+
+### Описание файла docker-compose.yaml
+Файл для развёртывания контейнеров с тремя сервисами. env_file не представлен в репозитории, поскольку содержит координаты подключения к сервисам Yandex Cloud.
+
+### Описание файла docker
+Используется для создания трёх сервисов:
+ - docker build . -t stg_service:local --build-arg SERVICE_TYPE=stg_service
+ - docker build . -t dds_service:local --build-arg SERVICE_TYPE=dds_service
+ - docker build . -t cdm_service:local --build-arg SERVICE_TYPE=cdm_service
+
+Образы хранятся в следующих репозиториях:
+ - cr.yandex/crpvtpe3gfclmuge0opa/stg_service
+ - cr.yandex/crpvtpe3gfclmuge0opa/dds_service
+ - cr.yandex/crpvtpe3gfclmuge0opa/cdm_service
