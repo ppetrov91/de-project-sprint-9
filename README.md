@@ -13,9 +13,9 @@
 
 ### Описание класса AppConfig файла app_config.py
 1. Метод __get_env_variables_dict() - возвращает словарь конфигурационных параметров:
-    CERTIFICATE_PATH - путь к сертификату для подключения к компонентам Yandex Cloud.
-	DEFAULT_JOB_INTERVAL - частота работы сервиса. Например, раз в две минуты.
-	KAFKA_HOST - наименование хоста с брокером Kafka.
+    - CERTIFICATE_PATH - путь к сертификату для подключения к компонентам Yandex Cloud.
+	- DEFAULT_JOB_INTERVAL - частота работы сервиса. Например, раз в две минуты.
+	- KAFKA_HOST - наименование хоста с брокером Kafka.
 	KAFKA_PORT - порт брокера Kafka.
 	KAFKA_USERNAME - логин подключения к брокеру Kafka.
 	KAFKA_PASSWORD - пароль подключения к брокеру Kafka.
