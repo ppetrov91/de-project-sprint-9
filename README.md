@@ -263,3 +263,12 @@
  - cr.yandex/crpvtpe3gfclmuge0opa/stg_service
  - cr.yandex/crpvtpe3gfclmuge0opa/dds_service
  - cr.yandex/crpvtpe3gfclmuge0opa/cdm_service
+
+### Фомирование deployment в kubernetes
+Координаты подключения к сервисам Yandex Cloud оформлены в виде секретов.
+Сам test_values.yaml не представлен из-за чувтсвительности данных.
+
+Ниже приведены команды создания deployments:
+  - helm upgrade stg-service app -f test_values.yaml --install --atomic --set nameOverride=stg-service --set image.repository=cr.yandex/crpvtpe3gfclmuge0opa/stg_service
+  - helm upgrade dds-service app -f test_values.yaml --install --atomic --set nameOverride=dds-service --set image.repository=cr.yandex/crpvtpe3gfclmuge0opa/dds_service
+  - helm upgrade cdm-service app -f test_values.yaml --install --atomic --set nameOverride=cdm-service --set image.repository=cr.yandex/crpvtpe3gfclmuge0opa/cdm_service
