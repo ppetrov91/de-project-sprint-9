@@ -91,5 +91,15 @@
    - topic - топик подключения к Kafka broker.
    - cert_path - путь к сертификату для подключения к Kafka broker.
    - logger - logger для протоколирования действий сервиса с последующей записью в файл.
-   - timeout - timeout любой операции с kafka broker, 10 секунд.
+   - timeout - timeout любой операции с kafka broker, 60 секунд.
    - attempts - максимальное число любой операции с kafka broker, 10.
+
+### Описание класса KafkaProducer файла lib/kafka_client.py
+Используется для записи сообщений в Kafka topic.
+
+1. _create_client() - создание экземпляра класса confluent_kafka.Producer для записи сообщений в Kafka topic.
+2. __begin_transaction() - функция начала транзакции при записи сообщений в Kafka topic.
+3. __commit_transaction() - функция подтверждения транзакции при успешной записи сообщений в Kafka topic.
+4. __abort_transaction() - функция отката транзакции при неуспешной записи сообщений в Kafka topic.
+5. __produce() - функция записи сообщения в Kafka topic.
+6. save_data_to_kafka() - функция записи батча сообщений в Kafka topic.
