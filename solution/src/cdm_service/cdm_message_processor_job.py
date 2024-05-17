@@ -36,7 +36,6 @@ class CDMMessageProcessor:
 
     def __process_data(self, data):
         self.__logger.info("Start processing data from kafka")
-        ids = []
 
         error_msgs = '\n'.join(str(mes.error()) for mes in data if mes.error())
 
@@ -52,7 +51,10 @@ class CDMMessageProcessor:
             self.__logger.info("No orders were gathered from kafka")
             return []
 
-        ids = [int(msg["payload"]["user_id"]) for msg in decoded_msgs]
+        ids = [int(msg["payload"]["user_id"]) 
+               for msg in decoded_msgs
+               if msg["payload"]["status"] == "CLOSED"]
+
         self.__logger.info("Stop processing data from kafka")
         return ids
 
