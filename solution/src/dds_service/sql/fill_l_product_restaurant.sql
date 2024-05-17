@@ -8,7 +8,7 @@ SELECT gen_random_uuid() AS hk_product_restaurant_pk
   FROM (SELECT DISTINCT s.restaurant_id 
      	     , s.prod->>'id' AS product_id
           FROM (SELECT s.payload->'payload'->'restaurant'->>'id' AS restaurant_id
-          	     , jsonb_array_elements(s.payload->'payload'->'products') AS prod
+          	     , jsonb_array_elements(s.payload->'payload'->'order_items') AS prod
                   FROM stg.order_events s
                  WHERE s.object_id = ANY(%(object_ids)s)
                    AND s.object_type = %(object_type)s
