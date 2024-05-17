@@ -19,7 +19,7 @@ class CDMMessageProcessor:
     @staticmethod
     def __get_file_data_dict(data):
         dirname = os.path.dirname(os.path.abspath(__file__))
-        file_data_dict, data_tup = {}, (data, tuple())
+        file_data_dict, data_tup = {}, ([data], tuple())
         objs = ("user_category_counters", "user_product_counters")
 
         for obj in objs:
@@ -51,9 +51,9 @@ class CDMMessageProcessor:
             self.__logger.info("No orders were gathered from kafka")
             return []
 
-        ids = [int(msg["payload"]["user_id"]) 
+        ids = [msg["payload"]["user_id"]
                for msg in decoded_msgs
-               if msg["payload"]["status"] == "CLOSED"]
+               if msg["payload"]["final_status"] == "CLOSED"]
 
         self.__logger.info("Stop processing data from kafka")
         return ids
