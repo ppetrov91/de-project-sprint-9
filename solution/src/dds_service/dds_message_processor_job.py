@@ -20,7 +20,7 @@ class DDSMessageProcessor:
         self.__logger = logger
 
     @staticmethod
-    def __get_file_data_dict(load_src, ids, object_type):
+    def __get_file_data_dict(ids, object_type, load_src):
         dirname = os.path.dirname(os.path.abspath(__file__))
         bind_vars_data = {
             "load_src": load_src,
