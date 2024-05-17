@@ -28,7 +28,7 @@ class StgMessageProcessor:
 
         return {
             u["_id"] : {
-                "id": u["id"],
+                "id": u["_id"],
                 "name": u["name"],
                 "login": u["login"]
             }
@@ -50,8 +50,8 @@ class StgMessageProcessor:
         }
 
     def __construct_kafka_data(self, decoded_msgs):
-        users = self.__get_users_from_redis(self, decoded_msgs)
-        restaurants = self.__get_restaurants_from_redis(self, decoded_msgs)
+        users = self.__get_users_from_redis(decoded_msgs)
+        restaurants = self.__get_restaurants_from_redis(decoded_msgs)
         cur_dt = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
         return [
@@ -106,7 +106,7 @@ class StgMessageProcessor:
             for msg in decoded_msgs 
         ]
 
-        kafka_data = self.__construct_kafka_data(self, decoded_msgs)
+        kafka_data = self.__construct_kafka_data(decoded_msgs)
         self.__logger.info("Stop processing data from kafka")
         return pg_data, kafka_data
 
