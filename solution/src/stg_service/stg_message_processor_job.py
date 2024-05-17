@@ -5,7 +5,6 @@ from logging import Logger
 from lib.kafka_client import KafkaConsumer, KafkaProducer
 from lib.redis_client import RedisClient
 from lib.pg_client import PostgresClient
-from typing import Dict
 
 
 class StgMessageProcessor:
@@ -23,83 +22,112 @@ class StgMessageProcessor:
         self.__batch_size = batch_size
         self.__logger = logger
 
-    @staticmethod
-    def __create_output_message(message: Dict, restaurant: Dict, user: Dict) -> Dict:
-        categories_dict = {p["_id"]: p["category"] for p in restaurant["menu"]}
-        
-        for p in message["payload"]["order_items"]:
-            p["category"] = categories_dict[p["id"]]
+    def __get_users_from_redis(self, msgs):
+        users = {mes["payload"]["user"]["id"] for mes in msgs}
+        users = self.__redis.mget(*users)
 
         return {
-            "object_id": message["object_id"],
-            "object_type": message["object_type"],
-            "sent_dttm": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
-            "payload": {
-                "id": message["object_id"],
-                "date": message["payload"]["date"],
-                "cost": message["payload"]["cost"],
-                "payment": message["payload"]["payment"],
-                "status": message["payload"]["final_status"],
-                "restaurant": {
-                    "id": restaurant["_id"],
-                    "name": restaurant["name"],
-                },
-                "user": {
-                    "id": user["_id"],
-                    "name": user["name"],
-                    "login": user["login"]
-                },
-                "products": message["payload"]["order_items"]
+            u["_id"] : {
+                "id": u["id"],
+                "name": u["name"],
+                "login": u["login"]
             }
+            for u in users
         }
 
-    def __get_restaurant_user_from_redis(self, message: Dict):
-        restaurant_id = message["payload"]["restaurant"]["id"]
-        user_id = message["payload"]["user"]["id"]
-        return self.__redis.mget(restaurant_id, user_id)
+    def __get_restaurants_from_redis(self, msgs):
+        restaurants = {mes["payload"]["restaurant"]["id"] for mes in msgs}
+        restaurants = self.__redis.mget(*restaurants)
 
-    def __construct_message(self, mes):
-        if mes.error():
-            raise Exception(f"An error occured while reading a message from kafka: {mes.error()}")
-        
-        val = json.loads(mes.value().decode())
+        return {
+            r["_id"] : {
+                "name": r["name"],
+                "products": {
+                  p["_id"]: p["category" ] for p in r["menu"]
+                }
+            }
+            for r in restaurants
+        }
 
-        if val.get("object_type", "") != "order":
-            return None, None
+    def __construct_kafka_data(self, decoded_msgs):
+        users = self.__get_users_from_redis(self, decoded_msgs)
+        restaurants = self.__get_restaurants_from_redis(self, decoded_msgs)
+        cur_dt = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
+        return [
+            {
+                "object_id": msg["object_id"],
+                "object_type": msg["object_type"],
+                "sent_dttm": cur_dt,
+                "payload": {
+                    "id": msg["object_id"],
+                    "date": msg["payload"]["date"],
+                    "cost": msg["payload"]["cost"],
+                    "payment": msg["payload"]["payment"],
+                    "status": msg["payload"]["final_status"],
+                    "restaurant": {
+                        "id": msg["payload"]["restaurant"]["id"],
+                        "name": restaurants[msg["payload"]["restaurant"]["id"]]["name"]
+                    },
+                    "user": users[msg["payload"]["user"]["id"]],
+                    "products": [
+                        {
+                            "id": p["id"],
+                            "price": p["price"],
+                            "quantity": p["quantity"],
+                            "name": p["name"],
+                            "category": restaurants[msg["payload"]["restaurant"]["id"]]["products"][p["id"]]
+                        }
+                        for p in msg["payload"]["order_items"]
+                    ]
+                }
+            }
+            for msg in decoded_msgs
+        ]
+
+    def __process_data(self, data):
+        self.__logger.info("Start processing data from kafka")
+        error_msgs = '\n'.join(str(mes.error()) for mes in data if mes.error())
+
+        if error_msgs:
+            raise Exception(f"An error occured while reading messages from kafka: {error_msgs}")
         
-        restaurant, user = self.__get_restaurant_user_from_redis(val)
-        return val["sent_dttm"], self.__create_output_message(val, restaurant, user)
+        decoded_msgs = list(filter(lambda mes: mes.get("object_type", "") == "order", 
+                                   map(lambda mes: json.loads(mes.value().decode()), data)
+                                  )
+                           )
+
+        if len(decoded_msgs) == 0:
+            self.__logger.info("No orders were gathered from kafka")
+            return [], []
+
+        pg_data = [
+            (msg["object_id"], json.dumps(msg["payload"]), msg["object_type"], msg["sent_dttm"])
+            for msg in decoded_msgs 
+        ]
+
+        kafka_data = self.__construct_kafka_data(self, decoded_msgs)
+        self.__logger.info("Stop processing data from kafka")
+        return pg_data, kafka_data
+
+    @staticmethod
+    def __get_file_data_dict(data):
+        dirname = os.path.dirname(os.path.abspath(__file__))
+        file_data_dict, data_tup = {}, (data, tuple())
+
+        objs = ("order_events",)
+
+        for obj in objs:
+            for query_type in ("fill", "analyze"):
+                file_data_dict[f"{dirname}/sql/{query_type}_{obj}.sql"] = data_tup[query_type == "analyze"]
+
+        return file_data_dict
 
     def __save_data_to_pg(self, data):
         self.__logger.info("Start saving data to postgres")
-        file_data = {"sql/fill_order_events.sql": data, "sql/analyze_order_events.sql": tuple()}
-        
-        for file, d in file_data.items():
-            sql_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), file)
-    
-            with open(sql_path, "r") as f:
-                sql = f.read()
-                self.__postgres.bulk_data_load(sql, d)
-        
+        file_data_dict = self.__get_file_data_dict(data)
+        self.__postgres.bulk_data_load(file_data_dict)
         self.__logger.info("Stop saving data to postgres")
-
-    def __process_data(self, data):
-        pg_data, kafka_data = [], []
-        self.__logger.info("Start processing data from kafka")
-
-        for mes in data:
-            sent_dttm, msg = self.__construct_message(mes)
-
-            if not msg:
-                continue
-
-            pg_data.append((msg["object_id"], json.dumps(msg["payload"]), 
-                            msg["object_type"], sent_dttm))
-            
-            kafka_data.append(msg)
-        
-        self.__logger.info("Stop processing data from kafka")
-        return pg_data, kafka_data
 
     def __process_batch(self):
         self.__logger.info("Start getting data from kafka")
@@ -114,8 +142,6 @@ class StgMessageProcessor:
 
         if len(pg_data) > 0:
             self.__save_data_to_pg(pg_data)
-
-        if len(kafka_data) > 0:
             self.__producer.save_data_to_kafka(kafka_data)
 
         self.__consumer.commit()

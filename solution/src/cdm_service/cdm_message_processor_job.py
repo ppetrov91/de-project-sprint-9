@@ -17,15 +17,16 @@ class CDMMessageProcessor:
         self.__logger = logger
 
     @staticmethod
-    def __get_file_data_dict(ids):
+    def __get_file_data_dict(data):
         dirname = os.path.dirname(os.path.abspath(__file__))
+        file_data_dict, data_tup = {}, (data, tuple())
+        objs = ("user_category_counters", "user_product_counters")
 
-        return {
-            f"{dirname}/sql/fill_user_category_counters.sql": [ids], 
-            f"{dirname}/sql/analyze_user_category_counters.sql": tuple(),
-            f"{dirname}/sql/fill_user_product_counters.sql": [ids],
-            f"{dirname}/sql/analyze_user_product_counters.sql": tuple()
-        }
+        for obj in objs:
+            for query_type in ("fill", "analyze"):
+                file_data_dict[f"{dirname}/sql/{query_type}_{obj}.sql"] = data_tup[query_type == "analyze"]
+
+        return file_data_dict
 
     def __save_data_to_pg(self, ids):
         self.__logger.info("Start saving data to postgres")

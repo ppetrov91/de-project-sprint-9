@@ -43,11 +43,14 @@ class PostgresClient:
                     sql = f.read()
                     cur.execute(sql, data)
 
-    def bulk_data_load(self, sql, data) -> None:
+    def bulk_data_load(self, file_data_dict) -> None:
         conn = self.get_connection()
 
         with conn.transaction(), conn.cursor() as cur:
-            cur.executemany(sql, data)
+            for file, data in file_data_dict.items():
+                with open(file, "r") as f:
+                    sql = f.read()
+                    cur.executemany(sql, data)
 
     def close(self) -> None:
         if self.__connection and not self.__connection.closed:

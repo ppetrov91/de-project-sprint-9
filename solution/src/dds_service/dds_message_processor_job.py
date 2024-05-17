@@ -19,89 +19,68 @@ class DDSMessageProcessor:
         self.__batch_size = batch_size
         self.__logger = logger
 
-    def __construct_message(self, mes):
-        if mes.error():
-            raise Exception(f"An error occured while reading a message from kafka: {mes.error()}")
-
-        val = json.loads(mes.value().decode())
-
-        if val.get("object_type", "") != "order":
-            return None, None
-        
-        order_id, status = int(val["object_id"]), val["payload"]["status"]
-
-        if status != "CLOSED":
-            return order_id, None
-
-        return order_id, {
-            "object_id": order_id,
-            "object_type": "order",
-            "sent_dttm": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
-            "payload": {
-                "status": status,
-                "date": val["payload"]["date"],
-                "user_id": val["payload"]["user"]["id"],
-                "products": [{"product_id": p["id"], 
-                              "category_name": p["category"]} for p in val["payload"]["products"]]
-            }
-        }
-
     @staticmethod
-    def __get_file_data_dict(load_src, ids, object_type):
+    def __get_file_data_dict(data):
         dirname = os.path.dirname(os.path.abspath(__file__))
+        file_data_dict, data_tup = {}, (data, tuple())
 
-        return {
-            f"{dirname}/sql/fill_h_order.sql": [load_src, ids, object_type], 
-            f"{dirname}/sql/analyze_h_order.sql": tuple(),
-            f"{dirname}/sql/fill_h_user.sql": [load_src, ids, object_type], 
-            f"{dirname}/sql/analyze_h_user.sql": tuple(),
-            f"{dirname}/sql/fill_h_product.sql": [load_src, ids, object_type], 
-            f"{dirname}/sql/analyze_h_product.sql": tuple(),
-            f"{dirname}/sql/fill_h_restaurant.sql": [load_src, ids, object_type], 
-            f"{dirname}/sql/analyze_h_restaurant.sql": tuple(),
-            f"{dirname}/sql/fill_h_category.sql": [load_src, ids, object_type], 
-            f"{dirname}/sql/analyze_h_category.sql": tuple(),
-            f"{dirname}/sql/fill_l_order_product.sql": [load_src, ids, object_type], 
-            f"{dirname}/sql/analyze_l_order_product.sql": tuple(),
-            f"{dirname}/sql/fill_l_order_user.sql": [load_src, ids, object_type], 
-            f"{dirname}/sql/analyze_l_order_user.sql": tuple(),
-            f"{dirname}/sql/fill_l_product_category.sql": [load_src, ids, object_type], 
-            f"{dirname}/sql/analyze_l_product_category.sql": tuple(),
-            f"{dirname}/sql/fill_l_product_restaurant.sql": [load_src, ids, object_type], 
-            f"{dirname}/sql/analyze_l_product_restaurant.sql": tuple(),
-            f"{dirname}/sql/fill_s_order_cost.sql": [ids, object_type, load_src],
-            f"{dirname}/sql/analyze_s_order_cost.sql": tuple(),
-            f"{dirname}/sql/fill_s_order_status.sql": [ids, object_type, load_src],
-            f"{dirname}/sql/analyze_s_order_status.sql": tuple(),
-            f"{dirname}/sql/fill_s_product_names.sql": [ids, object_type, load_src],
-            f"{dirname}/sql/analyze_s_product_names.sql": tuple(),
-            f"{dirname}/sql/fill_s_restaurant_names.sql": [ids, object_type, load_src],
-            f"{dirname}/sql/analyze_s_restaurant_names.sql": tuple(),
-            f"{dirname}/sql/fill_s_user_names.sql": [ids, object_type, load_src],
-            f"{dirname}/sql/analyze_s_user_names.sql": tuple(),
-        }
+        objs = (
+            "h_order", "h_user", "h_product", "h_restaurant", "h_category", 
+            "l_order_product", "l_order_user", "l_product_category", "l_product_restaurant",
+            "s_order_cost", "s_order_status", "s_product_names", "s_restaurant_names",
+            "s_user_names"
+        )
+
+        for obj in objs:
+            for query_type in ("fill", "analyze"):
+                file_data_dict[f"{dirname}/sql/{query_type}_{obj}.sql"] = data_tup[query_type == "analyze"]
+
+        return file_data_dict
 
     def __save_data_to_pg(self, ids, object_type, load_src):
         self.__logger.info("Start saving data to postgres")
-        file_data_dict = self.__get_file_data_dict(load_src, ids, object_type)
+        file_data_dict = self.__get_file_data_dict([load_src, ids, object_type])
         self.__postgres.exec_sql_files(file_data_dict)
         self.__logger.info("Stop saving data to postgres")
 
     def __process_data(self, data):
         self.__logger.info("Start processing data from kafka")
-        ids, kafka_data = [], []
+        sent_dttm = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        error_msgs = '\n'.join(str(mes.error()) for mes in data if mes.error())
 
-        for mes in data:
-            order_id, msg = self.__construct_message(mes)
-
-            if not order_id:
-                continue
+        if error_msgs:
+            raise Exception(f"An error occured while reading messages from kafka: {error_msgs}")
         
-            ids.append(order_id)
+        decoded_msgs = list(filter(lambda mes: mes.get("object_type", "") == "order", 
+                                   map(lambda mes: json.loads(mes.value().decode()), data)
+                                  )
+                           )
 
-            if msg is not None:
-                kafka_data.append(msg)
+        if len(decoded_msgs) == 0:
+            self.__logger.info("No orders were gathered from kafka")
+            return [], []
 
+        ids = [int(msg["object_id"]) for msg in decoded_msgs]
+
+        kafka_data = [
+            {
+                "object_id": int(msg["object_id"]),
+                "object_type": "order",
+                "sent_dttm": sent_dttm,
+                "payload": {
+                    "status": "CLOSED",
+                    "date": msg["payload"]["date"],
+                    "user_id": msg["payload"]["user"]["id"],
+                    "products": [
+                        {"product_id": p["id"], "category_name": p["category"]}
+                        for p in msg["payload"]["products"]
+                    ]
+                }
+            }
+            for msg in decoded_msgs
+            if msg["payload"]["status"] == "CLOSED"
+        ]
+        
         self.__logger.info("Stop processing data from kafka")
         return ids, kafka_data
 
