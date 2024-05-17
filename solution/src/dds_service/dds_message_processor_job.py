@@ -37,8 +37,6 @@ class DDSMessageProcessor:
             "s_user_names"
         )
 
-        objs = ("h_order",)
-
         for obj in objs:
             for query_type in ("fill", "analyze"):
                 file_data_dict[f"{dirname}/sql/{query_type}_{obj}.sql"] = data_tup[query_type == "analyze"]

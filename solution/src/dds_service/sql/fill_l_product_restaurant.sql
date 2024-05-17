@@ -7,7 +7,7 @@ SELECT gen_random_uuid() AS hk_product_restaurant_pk
      , %(load_src)s AS load_src
   FROM (SELECT DISTINCT s.restaurant_id 
      	     , s.prod->>'id' AS product_id
-          FROM (SELECT s.payload->'restaurant'->>'id' AS restaurant_id
+          FROM (SELECT s.payload->'payload'->'restaurant'->>'id' AS restaurant_id
           	     , jsonb_array_elements(s.payload->'payload'->'products') AS prod
                   FROM stg.order_events s
                  WHERE s.object_id = ANY(%(object_ids)s)
