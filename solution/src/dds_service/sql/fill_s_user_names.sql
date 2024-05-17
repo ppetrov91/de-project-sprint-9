@@ -2,9 +2,9 @@ WITH ds AS (
 SELECT hu.h_user_pk
      , s.username
      , s.userlogin
-  FROM (SELECT DISTINCT s.payload->'user'->>'id' AS user_id
-	     , s.payload->'user'->>'name' AS username
-	     , s.payload->'user'->>'login' AS userlogin
+  FROM (SELECT DISTINCT s.payload->'payload'->'user'->>'id' AS user_id
+	     , s.payload->'payload'->'user'->>'name' AS username
+	     , s.payload->'payload'->'user'->>'login' AS userlogin
           FROM stg.order_events s
  	 WHERE s.object_id = ANY(%(object_ids)s)
            AND s.object_type = %(object_type)s

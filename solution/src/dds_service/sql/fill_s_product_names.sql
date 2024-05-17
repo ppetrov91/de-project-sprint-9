@@ -3,7 +3,7 @@ SELECT hp.h_product_pk
      , s.productname
   FROM (SELECT DISTINCT s.prod->>'id' AS product_id
 	     , s.prod->>'name' AS productname
-          FROM (SELECT jsonb_array_elements(s.payload->'products') AS prod
+          FROM (SELECT jsonb_array_elements(s.payload->'payload'->'order_items') AS prod
                   FROM stg.order_events s
                  WHERE s.object_id = ANY(%(object_ids)s)
                    AND s.object_type = %(object_type)s

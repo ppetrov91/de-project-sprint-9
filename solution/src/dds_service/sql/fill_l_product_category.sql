@@ -7,7 +7,7 @@ SELECT gen_random_uuid() AS hk_product_category_pk
      , %(load_src)s AS load_src
   FROM (SELECT DISTINCT s.prod->>'id' AS product_id
   	     , s.prod->>'category' AS category 
-          FROM (SELECT jsonb_array_elements(s.payload->'products') AS prod
+          FROM (SELECT jsonb_array_elements(s.payload->'payload'->'order_items') AS prod
                   FROM stg.order_events s
                  WHERE s.object_id = ANY(%(object_ids)s)
                    AND s.object_type = %(object_type)s

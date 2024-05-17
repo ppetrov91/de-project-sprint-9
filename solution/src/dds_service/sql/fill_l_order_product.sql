@@ -8,8 +8,8 @@ SELECT gen_random_uuid() AS hk_order_product_pk
      	     , s.prod->>'id' AS product_id
   	  FROM (SELECT s.order_id
   	       	     , jsonb_array_elements(s.prod_arr) AS prod
-                  FROM (SELECT (s.payload->>'id')::int AS order_id
-          	       	     , s.payload->'products' AS prod_arr
+                  FROM (SELECT s.object_id AS order_id
+          	       	     , s.payload->'payload'->'order_items' AS prod_arr
                           FROM stg.order_events s
                  	 WHERE s.object_id = ANY(%(object_ids)s)
                    	   AND s.object_type = %(object_type)s

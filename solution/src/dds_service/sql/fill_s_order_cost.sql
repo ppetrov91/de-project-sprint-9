@@ -1,7 +1,7 @@
 WITH ds AS (
 SELECT ho.h_order_pk
-     , (s.payload->>'cost')::decimal(19,5) AS cost
-     , (s.payload->>'payment')::decimal(19,5) AS payment 
+     , (s.payload->'payload'->>'cost')::decimal(19,5) AS cost
+     , (s.payload->'payload'->>'payment')::decimal(19,5) AS payment 
   FROM stg.order_events s
   JOIN dds.h_order ho
     ON ho.order_id = s.object_id

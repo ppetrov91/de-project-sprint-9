@@ -1,6 +1,6 @@
 INSERT INTO stg.order_events(object_id, payload, object_type, sent_dttm)
 VALUES (%s, %s, %s, %s)
-    ON CONFLICT(object_id) 
+    ON CONFLICT(object_id)
     DO UPDATE
           SET object_type = EXCLUDED.object_type, 
               sent_dttm = EXCLUDED.sent_dttm, 

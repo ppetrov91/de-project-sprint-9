@@ -1,8 +1,8 @@
 WITH ds AS (
 SELECT hr.h_restaurant_pk
      , s.restaurantname
-  FROM (SELECT DISTINCT s.payload->'restaurant'->>'id' AS restaurant_id
-             , s.payload->'restaurant'->>'name' AS restaurantname
+  FROM (SELECT DISTINCT s.payload->'payload'->'restaurant'->>'id' AS restaurant_id
+             , s.payload->'payload'->'restaurant'->>'name' AS restaurantname
           FROM stg.order_events s
          WHERE s.object_id = ANY(%(object_ids)s)
            AND s.object_type = %(object_type)s

@@ -37,6 +37,8 @@ class DDSMessageProcessor:
             "s_user_names"
         )
 
+        objs = ("h_order",)
+
         for obj in objs:
             for query_type in ("fill", "analyze"):
                 file_data_dict[f"{dirname}/sql/{query_type}_{obj}.sql"] = data_tup[query_type == "analyze"]
@@ -58,17 +60,17 @@ class DDSMessageProcessor:
                 "object_type": "order",
                 "sent_dttm": sent_dttm,
                 "payload": {
-                    "status": "CLOSED",
+                    "final_status": "CLOSED",
                     "date": msg["payload"]["date"],
                     "user_id": msg["payload"]["user"]["id"],
                     "products": [
                         {"product_id": p["id"], "category_name": p["category"]}
-                        for p in msg["payload"]["products"]
+                        for p in msg["payload"]["order_items"]
                     ]
                 }
             }
             for msg in data
-            if msg["payload"]["status"] == "CLOSED"
+            if msg["payload"]["final_status"] == "CLOSED"
         ]
 
     def __process_data(self, data):

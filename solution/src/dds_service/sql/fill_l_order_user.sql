@@ -4,8 +4,8 @@ SELECT gen_random_uuid() AS hk_order_user_pk
      , hu.h_user_pk
      , now() AS load_dt
      , %(load_src)s AS load_src
-  FROM (SELECT DISTINCT s.payload->'user'->>'id' AS user_id
-             , (s.payload->>'id')::int AS order_id
+  FROM (SELECT DISTINCT s.payload->'payload'->'user'->>'id' AS user_id
+             , s.object_id AS order_id
           FROM stg.order_events s
  	 WHERE s.object_id = ANY(%(object_ids)s)
    	   AND s.object_type = %(object_type)s
