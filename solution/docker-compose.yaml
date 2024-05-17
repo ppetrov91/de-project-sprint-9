@@ -35,19 +35,19 @@ services:
       - "5013:5000"
     restart: unless-stopped
 
-  cdm_service:
-    build:
-      context: .
-      args:
-        SERVICE_TYPE: cdm
-      dockerfile: dockerfile
-      network: host
-    image: cdm_service:local
-    container_name: cdm_service_container
-    env_file: env_file
-    environment:
-      FLASK_APP: cdm_service
-    network_mode: "bridge"
-    ports:
-      - "5014:5000"
-    restart: unless-stopped
+  #cdm_service:
+  #  build:
+  #    context: .
+  #    args:
+  #      SERVICE_TYPE: cdm
+  #    dockerfile: dockerfile
+  #    network: host
+  #  image: cdm_service:local
+  #  container_name: cdm_service_container
+  #  env_file: env_file
+  #  environment:
+  #    FLASK_APP: cdm_service
+  #  network_mode: "bridge"
+  #  ports:
+  #    - "5014:5000"
+  #  restart: unless-stopped

@@ -114,6 +114,7 @@ class StgMessageProcessor:
             self.__logger.info("No data was gathered from kafka")
             return
         
+        self.__logger.info(f"Gathered {len(data)} messages from kafka")
         data = self.__process_data(data)
 
         if len(data) > 0:

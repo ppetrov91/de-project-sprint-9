@@ -11,7 +11,7 @@ class AppConfig:
     def __get_env_variables_dict() -> Dict:
         return {
             'CERTIFICATE_PATH': '/crt/YandexInternalRootCA.crt',
-            'DEFAULT_JOB_INTERVAL': '120',
+            'DEFAULT_JOB_INTERVAL': '60',
             'KAFKA_HOST': '',
             'KAFKA_PORT': '9092',
             'KAFKA_USERNAME': '',
@@ -34,7 +34,7 @@ class AppConfig:
             'PG_WAREHOUSE_DBNAME': '',
             'PG_WAREHOUSE_USER': '',
             'PG_WAREHOUSE_PASSWORD': '',
-            'BATCH_SIZE': '100'
+            'BATCH_SIZE': '50'
         }
         
     def __init__(self, logger: Logger) -> None:

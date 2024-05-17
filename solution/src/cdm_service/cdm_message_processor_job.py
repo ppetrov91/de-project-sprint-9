@@ -38,17 +38,21 @@ class CDMMessageProcessor:
         self.__logger.info("Start processing data from kafka")
         ids = []
 
-        for mes in data:
-            if mes.error():
-                raise Exception(f"An error occured while reading a message from kafka: {mes.error()}")
+        error_msgs = '\n'.join(str(mes.error()) for mes in data if mes.error())
 
-            val = json.loads(mes.value().decode())
+        if error_msgs:
+            raise Exception(f"An error occured while reading messages from kafka: {error_msgs}")
+        
+        decoded_msgs = list(filter(lambda mes: mes.get("object_type", "") == "order", 
+                                   map(lambda mes: json.loads(mes.value().decode()), data)
+                                  )
+                           )
 
-            if val.get("object_type", "") != "order":
-                continue
-  
-            ids.append(val["payload"]["user_id"])
+        if len(decoded_msgs) == 0:
+            self.__logger.info("No orders were gathered from kafka")
+            return []
 
+        ids = [int(msg["payload"]["user_id"]) for msg in decoded_msgs]
         self.__logger.info("Stop processing data from kafka")
         return ids
 
