@@ -20,9 +20,15 @@ class DDSMessageProcessor:
         self.__logger = logger
 
     @staticmethod
-    def __get_file_data_dict(data):
+    def __get_file_data_dict(load_src, ids, object_type):
         dirname = os.path.dirname(os.path.abspath(__file__))
-        file_data_dict, data_tup = {}, (data, tuple())
+        bind_vars_data = {
+            "load_src": load_src,
+            "object_ids": ids,
+            "object_type": object_type
+        }
+
+        file_data_dict, data_tup = {}, (bind_vars_data, tuple())
 
         objs = (
             "h_order", "h_user", "h_product", "h_restaurant", "h_category", 
@@ -39,13 +45,34 @@ class DDSMessageProcessor:
 
     def __save_data_to_pg(self, ids, object_type, load_src):
         self.__logger.info("Start saving data to postgres")
-        file_data_dict = self.__get_file_data_dict([load_src, ids, object_type])
+        file_data_dict = self.__get_file_data_dict(ids, object_type, load_src)
         self.__postgres.exec_sql_files(file_data_dict)
         self.__logger.info("Stop saving data to postgres")
 
+    def __construct_kafka_data(self, data):
+        sent_dttm = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
+        return [
+            {
+                "object_id": int(msg["object_id"]),
+                "object_type": "order",
+                "sent_dttm": sent_dttm,
+                "payload": {
+                    "status": "CLOSED",
+                    "date": msg["payload"]["date"],
+                    "user_id": msg["payload"]["user"]["id"],
+                    "products": [
+                        {"product_id": p["id"], "category_name": p["category"]}
+                        for p in msg["payload"]["products"]
+                    ]
+                }
+            }
+            for msg in data
+            if msg["payload"]["status"] == "CLOSED"
+        ]
+
     def __process_data(self, data):
         self.__logger.info("Start processing data from kafka")
-        sent_dttm = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         error_msgs = '\n'.join(str(mes.error()) for mes in data if mes.error())
 
         if error_msgs:
@@ -61,26 +88,7 @@ class DDSMessageProcessor:
             return [], []
 
         ids = [int(msg["object_id"]) for msg in decoded_msgs]
-
-        kafka_data = [
-            {
-                "object_id": int(msg["object_id"]),
-                "object_type": "order",
-                "sent_dttm": sent_dttm,
-                "payload": {
-                    "status": "CLOSED",
-                    "date": msg["payload"]["date"],
-                    "user_id": msg["payload"]["user"]["id"],
-                    "products": [
-                        {"product_id": p["id"], "category_name": p["category"]}
-                        for p in msg["payload"]["products"]
-                    ]
-                }
-            }
-            for msg in decoded_msgs
-            if msg["payload"]["status"] == "CLOSED"
-        ]
-        
+        kafka_data = self.__construct_kafka_data(decoded_msgs)
         self.__logger.info("Stop processing data from kafka")
         return ids, kafka_data
 

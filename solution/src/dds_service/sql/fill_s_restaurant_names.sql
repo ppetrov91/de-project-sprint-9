@@ -4,8 +4,8 @@ SELECT hr.h_restaurant_pk
   FROM (SELECT DISTINCT s.payload->'restaurant'->>'id' AS restaurant_id
              , s.payload->'restaurant'->>'name' AS restaurantname
           FROM stg.order_events s
-         WHERE s.object_id = ANY(%s)
-           AND s.object_type = %s
+         WHERE s.object_id = ANY(%(object_ids)s)
+           AND s.object_type = %(object_type)s
        ) s
   JOIN dds.h_restaurant hr
     ON hr.restaurant_id = s.restaurant_id
@@ -28,7 +28,7 @@ INSERT INTO dds.s_restaurant_names(hk_restaurant_names_pk, h_restaurant_pk, rest
 SELECT gen_random_uuid() AS hk_restaurant_names_pk
      , d.h_restaurant_pk
      , d.restaurantname
-     , %s AS load_src
+     , %(load_src)s AS load_src
      , now() AS start_dt
      , '4000-01-01' AS end_dt
   FROM ds d

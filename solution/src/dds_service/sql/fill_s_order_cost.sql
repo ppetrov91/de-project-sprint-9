@@ -5,8 +5,8 @@ SELECT ho.h_order_pk
   FROM stg.order_events s
   JOIN dds.h_order ho
     ON ho.order_id = s.object_id
- WHERE s.object_id = ANY(%s)
-   AND s.object_type = %s
+ WHERE s.object_id = ANY(%(object_ids)s)
+   AND s.object_type = %(object_type)s
 ),
 upd_rec AS (
 UPDATE dds.s_order_cost soc
@@ -26,7 +26,7 @@ SELECT gen_random_uuid() AS hk_order_cost_pk
      , d.h_order_pk
      , d.cost
      , d.payment
-     , %s AS load_src
+     , %(load_src)s AS load_src
      , now() AS start_dt
      , '4000-01-01' AS end_dt
   FROM ds d

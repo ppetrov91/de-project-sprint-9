@@ -6,8 +6,8 @@ SELECT hu.h_user_pk
 	     , s.payload->'user'->>'name' AS username
 	     , s.payload->'user'->>'login' AS userlogin
           FROM stg.order_events s
- 	 WHERE s.object_id = ANY(%s)
-           AND s.object_type = %s
+ 	 WHERE s.object_id = ANY(%(object_ids)s)
+           AND s.object_type = %(object_type)s
        ) s
   JOIN dds.h_user hu
     ON hu.user_id = s.user_id
@@ -32,7 +32,7 @@ SELECT gen_random_uuid() AS hk_user_names_pk
      , d.h_user_pk
      , d.username
      , d.userlogin
-     , %s AS load_src
+     , %(load_src)s AS load_src
      , now() AS start_dt
      , '4000-01-01' AS end_dt
   FROM ds d

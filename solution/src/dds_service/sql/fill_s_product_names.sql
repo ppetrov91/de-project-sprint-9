@@ -5,8 +5,8 @@ SELECT hp.h_product_pk
 	     , s.prod->>'name' AS productname
           FROM (SELECT jsonb_array_elements(s.payload->'products') AS prod
                   FROM stg.order_events s
-                 WHERE s.object_id = ANY(%s)
-                   AND s.object_type = %s
+                 WHERE s.object_id = ANY(%(object_ids)s)
+                   AND s.object_type = %(object_type)s
                ) s
        ) s
   JOIN dds.h_product hp
@@ -30,7 +30,7 @@ INSERT INTO dds.s_product_names(hk_product_names_pk, h_product_pk, productname,
 SELECT gen_random_uuid() AS hk_product_names_pk
      , d.h_product_pk
      , d.productname
-     , %s AS load_src
+     , %(load_src)s AS load_src
      , now() AS start_dt
      , '4000-01-01' AS end_dt
   FROM ds d

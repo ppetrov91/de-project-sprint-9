@@ -3,12 +3,12 @@ SELECT gen_random_uuid() AS hk_order_user_pk
      , ho.h_order_pk
      , hu.h_user_pk
      , now() AS load_dt
-     , %s AS load_src
+     , %(load_src)s AS load_src
   FROM (SELECT DISTINCT s.payload->'user'->>'id' AS user_id
              , (s.payload->>'id')::int AS order_id
           FROM stg.order_events s
- 	 WHERE s.object_id = ANY(%s)
-   	   AND s.object_type = %s
+ 	 WHERE s.object_id = ANY(%(object_ids)s)
+   	   AND s.object_type = %(object_type)s
        ) s
   JOIN dds.h_order ho
     ON ho.order_id = s.order_id

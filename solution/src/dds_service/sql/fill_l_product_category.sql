@@ -4,13 +4,13 @@ SELECT gen_random_uuid() AS hk_product_category_pk
      , hp.h_product_pk
      , hc.h_category_pk
      , now() AS load_dt
-     , %s AS load_src
+     , %(load_src)s AS load_src
   FROM (SELECT DISTINCT s.prod->>'id' AS product_id
   	     , s.prod->>'category' AS category 
           FROM (SELECT jsonb_array_elements(s.payload->'products') AS prod
                   FROM stg.order_events s
-                 WHERE s.object_id = ANY(%s)
-                   AND s.object_type = %s
+                 WHERE s.object_id = ANY(%(object_ids)s)
+                   AND s.object_type = %(object_type)s
                ) s
        ) s
   JOIN dds.h_category hc

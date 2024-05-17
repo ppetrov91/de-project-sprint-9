@@ -3,7 +3,7 @@ SELECT gen_random_uuid() AS hk_order_product_pk
      , ho.h_order_pk
      , hp.h_product_pk
      , now() AS load_dt
-     , %s AS load_src
+     , %(load_src)s AS load_src
   FROM (SELECT DISTINCT s.order_id 
      	     , s.prod->>'id' AS product_id
   	  FROM (SELECT s.order_id
@@ -11,8 +11,8 @@ SELECT gen_random_uuid() AS hk_order_product_pk
                   FROM (SELECT (s.payload->>'id')::int AS order_id
           	       	     , s.payload->'products' AS prod_arr
                           FROM stg.order_events s
-                 	 WHERE s.object_id = ANY(%s)
-                   	   AND s.object_type = %s
+                 	 WHERE s.object_id = ANY(%(object_ids)s)
+                   	   AND s.object_type = %(object_type)s
                	       ) s
                ) s
        ) s
